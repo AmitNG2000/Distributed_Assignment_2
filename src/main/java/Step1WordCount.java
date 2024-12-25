@@ -112,7 +112,7 @@ public class Step1WordCount {
 //        TextInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/3gram/data"));
 
         FileInputFormat.addInputPath(job, new Path(String.format("%s/arbix.txt" , App.s3Path)));
-        FileOutputFormat.setOutputPath(job, new Path(String.format("%s/output_step1_word_count" , App.s3Path)));
+        FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step1_word_count" , App.s3Path)));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 
