@@ -21,35 +21,71 @@ import java.util.StringTokenizer;
  * @Output: ((w1), <LongWritable>), ((w1,w2), <LongWritable>), ((w1,w2,w3), <LongWritable>)
  */
 public class Step1WordCount {
+    //public class Mapper<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
+    public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
+        private final static LongWritable one = new LongWritable(1);
+        private Text w1 = new Text();
+        private Text w2 = new Text();
+        private Text w3 = new Text();
+        private Text output = new Text(); // Reuse output Text object
 
-    public static class MapperClass extends Mapper<LongWritable, Text, Text, IntWritable> {
-        private final static IntWritable one = new IntWritable(1);
-        private Text word = new Text();
 
         @Override
-        public void map(LongWritable key, Text value, Context context) throws IOException,  InterruptedException {
-            StringTokenizer itr = new StringTokenizer(value.toString());
-            while (itr.hasMoreTokens()) {
-                word.set(itr.nextToken());
-                context.write(word, one);
-            }
+        public void map(LongWritable key, Text sentence, Context context) throws IOException,  InterruptedException {
+            // Tokenize the input sentence
+            StringTokenizer tokenizer = new StringTokenizer(sentence.toString());
+
+            // Store the words for constructing n-grams
+            String[] words = new String[3];
+            int count = 0;
+
+            while (tokenizer.hasMoreTokens()) {
+                // Shift words to construct n-grams
+                words[count % 3] = tokenizer.nextToken();
+                count++;
+
+                if (count >= 1) {
+                    // Emit uni-gram (w1)
+                    w1.set(words[(count - 1) % 3]);
+                    //output.set(w1.toString());
+                    context.write(w1, one);
+                }
+
+                if (count >= 2) {
+                    // Emit bi-gram (w1, w2)
+                    w1.set(words[(count - 2) % 3]);
+                    w2.set(words[(count - 1) % 3]);
+                    output.set(w1.toString() + " " + w2.toString());
+                    context.write(output, one);
+                }
+
+                if (count >= 3) {
+                    // Emit tri-gram (w1, w2, w3)
+                    w1.set(words[(count - 3) % 3]);
+                    w2.set(words[(count - 2) % 3]);
+                    w3.set(words[(count - 1) % 3]);
+                    output.set(w1.toString() + " " + w2.toString() + " " + w3.toString());
+                    context.write(output, one);
+                }
+            } //end of while
         }
     }
 
-    public static class ReducerClass extends Reducer<Text,IntWritable,Text,IntWritable> {
+    //Class Reducer<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
+    public static class ReducerClass extends Reducer<Text,LongWritable,Text,LongWritable> {
         @Override
-        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException,  InterruptedException {
-            int sum = 0;
-            for (IntWritable value : values) {
+        public void reduce(Text key, Iterable<LongWritable> values, Context context) throws IOException,  InterruptedException {
+            long sum = 0;
+            for (LongWritable value : values) {
                 sum += value.get();
             }
-            context.write(key, new IntWritable(sum));
+            context.write(key, new LongWritable(sum));
         }
     }
 
-    public static class PartitionerClass extends Partitioner<Text, IntWritable> {
+    public static class PartitionerClass extends Partitioner<Text, LongWritable> {
         @Override
-        public int getPartition(Text key, IntWritable value, int numPartitions) {
+        public int getPartition(Text key, LongWritable value, int numPartitions) {
             return key.hashCode() % numPartitions;
         }
     }
@@ -58,16 +94,16 @@ public class Step1WordCount {
         System.out.println("[DEBUG] STEP 1 started!");
         System.out.println(args.length > 0 ? args[0] : "no args");
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "Word Count");
+        Job job = Job.getInstance(conf, "Step 1: Word Count");
         job.setJarByClass(Step1WordCount.class);
         job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
         job.setCombinerClass(ReducerClass.class);
         job.setReducerClass(ReducerClass.class);
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(IntWritable.class);
+        job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
+        job.setOutputValueClass(LongWritable.class);
 
 //        For n_grams S3 files.
 //        Note: This is English version and you should change the path to the relevant one
