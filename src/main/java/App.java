@@ -17,6 +17,17 @@ public class App {
 
     public static int numberOfInstances = 1;
 
+
+    private static final String bucketName = "bucket100100100";  //change if needed
+    public static final String s3Path = String.format("s3://%s", bucketName);
+
+    /**
+     * Executes the job flow.
+     * @pre AWS credentials are configured
+     * @pre an S3 bucket exists with the specified name at <bucketName>
+     * @pre the steps' JAR files are located in <bucketName>/jars with the expected names.
+     * @pre All preconditions specified for each step are satisfied.
+     */
     public static void main(String[]args){
         credentialsProvider = new ProfileCredentialsProvider();
         System.out.println("[INFO] Connecting to aws");
@@ -37,7 +48,7 @@ public class App {
 
         // Step 1
         HadoopJarStepConfig step1 = new HadoopJarStepConfig()
-                .withJar("s3://bucket163897429777/jars/WordCount.jar")
+                .withJar(String.format("%s/jars/Step1WordCount.jar" , s3Path))
                 .withMainClass("Step1");
 
         StepConfig stepConfig1 = new StepConfig()
@@ -60,7 +71,7 @@ public class App {
                 .withName("Map reduce project")
                 .withInstances(instances)
                 .withSteps(stepConfig1)
-                .withLogUri("s3://bucket163897429777/logs/")
+                .withLogUri(String.format("%s/logs/" , s3Path))
                 .withServiceRole("EMR_DefaultRole")
                 .withJobFlowRole("EMR_EC2_DefaultRole")
                 .withReleaseLabel("emr-5.11.0");

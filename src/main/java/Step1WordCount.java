@@ -13,7 +13,14 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
-public class WordCount {
+
+/**
+ *  Calculate the number single (w1), pairs (w1,w2) and trio (w1,w2,w3) in the corpus.
+ * @pre for demo, the inoutfile is at S3 with App.<bucketName>
+ * @Input split from a text file
+ * @Output: ((w1), <LongWritable>), ((w1,w2), <LongWritable>), ((w1,w2,w3), <LongWritable>)
+ */
+public class Step1WordCount {
 
     public static class MapperClass extends Mapper<LongWritable, Text, Text, IntWritable> {
         private final static IntWritable one = new IntWritable(1);
@@ -52,7 +59,7 @@ public class WordCount {
         System.out.println(args.length > 0 ? args[0] : "no args");
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "Word Count");
-        job.setJarByClass(WordCount.class);
+        job.setJarByClass(Step1WordCount.class);
         job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
         job.setCombinerClass(ReducerClass.class);
@@ -68,8 +75,8 @@ public class WordCount {
 //        job.setInputFormatClass(SequenceFileInputFormat.class);
 //        TextInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/3gram/data"));
 
-        FileInputFormat.addInputPath(job, new Path("s3://bucket163897429777/arbix.txt"));
-        FileOutputFormat.setOutputPath(job, new Path("s3://bucket163897429777/output_word_count"));
+        FileInputFormat.addInputPath(job, new Path(String.format("%s/arbix.txt" , App.s3Path)));
+        FileOutputFormat.setOutputPath(job, new Path(String.format("%s/output_step1_word_count" , App.s3Path)));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 
