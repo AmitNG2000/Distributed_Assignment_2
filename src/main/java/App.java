@@ -56,6 +56,17 @@ public class App {
                 .withHadoopJarStep(step1)
                 .withActionOnFailure("TERMINATE_JOB_FLOW");
 
+
+        // Step 2
+        HadoopJarStepConfig step2 = new HadoopJarStepConfig()
+                .withJar(String.format("%s/jars/Step2CalculateN.jar" , s3Path))
+                .withMainClass("Step2");
+
+        StepConfig stepConfig2 = new StepConfig()
+                .withName("Step2")
+                .withHadoopJarStep(step2)
+                .withActionOnFailure("TERMINATE_JOB_FLOW");
+
         //Job flow
         JobFlowInstancesConfig instances = new JobFlowInstancesConfig()
                 .withInstanceCount(numberOfInstances)
@@ -70,7 +81,7 @@ public class App {
         RunJobFlowRequest runFlowRequest = new RunJobFlowRequest()
                 .withName("Map reduce project")
                 .withInstances(instances)
-                .withSteps(stepConfig1)
+                .withSteps(stepConfig1 , stepConfig2) //TODO: how to make sure that step2 is after step2?
                 .withLogUri(String.format("%s/logs/" , s3Path))
                 .withServiceRole("EMR_DefaultRole")
                 .withJobFlowRole("EMR_EC2_DefaultRole")

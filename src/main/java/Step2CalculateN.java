@@ -31,6 +31,17 @@ public class Step2CalculateN {
         }
     }
 
+    //Partition by the first word
+    public static class PartitionerClass extends Partitioner<Text, LongWritable> {
+        @Override
+        public int getPartition(Text words, LongWritable value, int numPartitions) {
+            String[] wordsArr = words.toString().split(" ");
+            return wordsArr[1].hashCode() % numPartitions;
+        }
+    }
+
+
+
     //Class Reducer<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
     public static class ReducerClass extends Reducer<Text, LongWritable, Text, Text> {
         // mark 3-gram input as (w1, w2, w3)
@@ -67,62 +78,40 @@ public class Step2CalculateN {
                 // Output: ((w1,w2,w3) , (N1<LongWritable>,N2<LongWritable>,N3<LongWritable>, C0<0> ,C1<0> ,C2<0>)
                 String placeHolderForC = (" " + Long.toString(0) + " " + Long.toString(0) + " " + Long.toString(0));
                 context.write(words, new Text(N1 + " " + N2 + " " + N3 + placeHolderForC));
-
                 // reset N1 N2 N3
                 N1 = 0;
                 N2 = 0;
                 N3 = 0;
             } //end of if 3
         }
-
-        //Partition by the first word
-        public static class PartitionerClass extends Partitioner<Text, LongWritable> {
-            @Override
-            public int getPartition(Text words, LongWritable value, int numPartitions) {
-                String[] wordsArr = words.toString().split(" ");
-                return wordsArr[1].hashCode() % numPartitions;
-            }
-        }
-
-        //Class Reducer<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
-        public static class CombinerClass extends Reducer<Text,LongWritable,Text,LongWritable> {
-            private long N1 = 0;  // Number of times w3 occurs
-            private long N2 = 0;  // Number of times the sequence (w2, w3) occurs
-            private long N3 = 0;  // Number of times the sequence (w1, w2, w3) occurs
-            private long C0 = 0;  // Number of times w3 occurs
-            private long C1 = 0;  // Number of times the sequence (w2, w3) occurs
-            private long C2 = 0;  // Number of times the sequence (w1, w2, w3) occurs
-
-            @Override
-            public void reduce(Text words, Iterable<LongWritable> values, Context context) throws IOException,  InterruptedException {
-                //TODO:combine the "arrays"
-            }
-        }
-
-        public static void main(String[] args) throws Exception {
-            System.out.println("[DEBUG] STEP 2 started!");
-            System.out.println(args.length > 0 ? args[0] : "no args");
-            Configuration conf = new Configuration();
-            Job job = Job.getInstance(conf, "Step 2: Calculate N");
-            job.setJarByClass(Step2CalculateN.class);
-            job.setMapperClass(MapperClass.class);
-            job.setPartitionerClass(PartitionerClass.class);
-            job.setCombinerClass(CombinerClass.class);
-            job.setReducerClass(ReducerClass.class);
-            job.setMapOutputKeyClass(Text.class);
-            job.setMapOutputValueClass(LongWritable.class);
-            job.setOutputKeyClass(Text.class);
-            job.setOutputValueClass(Text.class);
-
-//        For n_grams S3 files.
-//        Note: This is English version and you should change the path to the relevant one
-//        job.setOutputFormatClass(TextOutputFormat.class);
-//        job.setInputFormatClass(SequenceFileInputFormat.class);
-//        TextInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/3gram/data"));
-
-            FileInputFormat.addInputPath(job, new Path(String.format("%s/arbix.txt", App.s3Path)));
-            FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step2_cal_N", App.s3Path)));
-            System.exit(job.waitForCompletion(true) ? 0 : 1);
-        }
     }
+
+
+
+    public static void main(String[] args) throws Exception {
+        System.out.println("[DEBUG] STEP 2 started!");
+        System.out.println(args.length > 0 ? args[0] : "no args");
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, "Step 2: Calculate N");
+        job.setJarByClass(Step2CalculateN.class);
+        job.setMapperClass(MapperClass.class);
+        job.setPartitionerClass(PartitionerClass.class);
+        // job.setCombinerClass(Step1WordCount.ReducerClass.class); //Don't think it will do a differnt
+        job.setReducerClass(ReducerClass.class);
+        job.setMapOutputKeyClass(Text.class);
+        job.setMapOutputValueClass(LongWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(Text.class);
+
+        // For n_grams S3 files.
+        // Note: This is English version and you should change the path to the relevant one
+        // job.setOutputFormatClass(TextOutputFormat.class);
+        // job.setInputFormatClass(SequenceFileInputFormat.class);
+        // TextInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/3gram/data"));
+
+        FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step1_word_count" , App.s3Path)));
+        FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step2_cal_N", App.s3Path)));
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+
+    } // end of main
 }
