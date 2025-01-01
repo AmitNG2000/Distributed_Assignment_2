@@ -10,7 +10,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.io.IOException;
-import java.util.StringTokenizer;
 
 
 /**
@@ -23,13 +22,20 @@ import java.util.StringTokenizer;
  */
 public class Step2CalculateN {
     //public class Mapper<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
-    public static class MapperClass extends Mapper<Text, LongWritable, Text, LongWritable> {
+    //public class Mapper<lineId,line,words,quantity>
+    //Example of a line form step 1 output:
+    public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
 
         // reverse the order of the words to get the proper order at sorting
         @Override
-        public void map(Text words, LongWritable quantity, Context context) throws IOException, InterruptedException {
-            Text reversedWords = UtilsFunctions.reverseTextWithSpaces(words);
-            context.write(reversedWords, quantity);
+        public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
+
+            String[] keyAndValue = line.toString().split("\t");
+            String words = keyAndValue[0];
+            LongWritable quantity = new LongWritable(Long.parseLong(keyAndValue[1]));
+
+            Text reversedWordsText = UtilsFunctions.reverseTextWithSpaces(new Text(words));
+            context.write(reversedWordsText, quantity);
         }
     }
 
@@ -44,13 +50,14 @@ public class Step2CalculateN {
 
 
     //Class Reducer<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
+    //Input Example:
     public static class ReducerClass extends Reducer<Text, LongWritable, Text, Text> {
         // We will mark 3-gram input as (w1, w2, w3)
         private long N1 = 0;  // Number of times w3 occurs
         private long N2 = 0;  // Number of times the sequence (w2, w3) occurs
         private long N3 = 0;  // Number of times the sequence (w1, w2, w3) occurs
 
-        private Text lastSingekWord = new Text("");
+        private Text lastSingelWord = new Text("");
         private Text lastPairWord = new Text("");
         private Text lastTripleWord = new Text("");
 
@@ -66,8 +73,8 @@ public class Step2CalculateN {
             //the input is one word
             if (wordsArr.length == 1) {
 
-                if (!lastSingekWord.equals(words)) {
-                    lastSingekWord.set(words);
+                if (!lastSingelWord.equals(words)) {
+                    lastSingelWord.set(words);
                     N1 = 0;
                 }
                 for (LongWritable quantity : quantities) {

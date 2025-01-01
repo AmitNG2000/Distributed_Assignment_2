@@ -15,7 +15,7 @@ public class App {
     public static AmazonEC2 ec2;
     public static AmazonElasticMapReduce emr;
 
-    public static int numberOfInstances = 1;
+    public static int numberOfInstances = 2;  //Do Not Exceed The Limit!
 
 
     private static final String bucketName = "bucket100100100";  //change if needed
@@ -25,8 +25,8 @@ public class App {
      * Executes the job flow.
      * @pre AWS credentials are configured
      * @pre an S3 bucket exists with the specified name at <bucketName>
-     * @pre the steps' JAR files are located in <bucketName>/jars with the expected names.
-     * @pre All preconditions specified for each step are satisfied.
+     * @pre the steps' JAR files are located in <bucketName>/jars with names: step1, Step2 ...
+     * @pre For Demo: arbix file is in the <bucketName>.
      */
     public static void main(String[]args){
         credentialsProvider = new ProfileCredentialsProvider();
@@ -48,7 +48,7 @@ public class App {
 
         // Step 1
         HadoopJarStepConfig step1 = new HadoopJarStepConfig()
-                .withJar(String.format("%s/jars/Step1WordCount.jar" , s3Path))
+                .withJar(String.format("%s/jars/Step1.jar" , s3Path))
                 .withMainClass("Step1");
 
         StepConfig stepConfig1 = new StepConfig()
@@ -59,7 +59,7 @@ public class App {
 
         // Step 2
         HadoopJarStepConfig step2 = new HadoopJarStepConfig()
-                .withJar(String.format("%s/jars/Step2CalculateN.jar" , s3Path))
+                .withJar(String.format("%s/jars/Step2.jar" , s3Path))
                 .withMainClass("Step2");
 
         StepConfig stepConfig2 = new StepConfig()
@@ -81,7 +81,7 @@ public class App {
         RunJobFlowRequest runFlowRequest = new RunJobFlowRequest()
                 .withName("Map reduce project")
                 .withInstances(instances)
-                .withSteps(stepConfig1 , stepConfig2) //TODO: how to make sure that step2 is after step2?
+                .withSteps(stepConfig1 , stepConfig2)
                 .withLogUri(String.format("%s/logs/" , s3Path))
                 .withServiceRole("EMR_DefaultRole")
                 .withJobFlowRole("EMR_EC2_DefaultRole")
