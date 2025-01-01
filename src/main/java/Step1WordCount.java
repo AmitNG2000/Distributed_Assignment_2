@@ -1,6 +1,5 @@
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -27,7 +26,7 @@ public class Step1WordCount {
         private Text w1 = new Text();
         private Text w2 = new Text();
         private Text w3 = new Text();
-        private Text output = new Text(); // Reuse output Text object
+        private Text wordsOutput = new Text(); // Reuse output Text object
 
 
         @Override
@@ -47,16 +46,16 @@ public class Step1WordCount {
                 if (count >= 1) {
                     // Emit uni-gram (w1)
                     w1.set(words[(count - 1) % 3]);
-                    //output.set(w1.toString());
-                    context.write(w1, one);
+                    wordsOutput.set(w1);
+                    context.write(wordsOutput, one);
                 }
 
                 if (count >= 2) {
                     // Emit bi-gram (w1, w2)
                     w1.set(words[(count - 2) % 3]);
                     w2.set(words[(count - 1) % 3]);
-                    output.set(w1.toString() + " " + w2.toString());
-                    context.write(output, one);
+                    wordsOutput.set(w1.toString() + " " + w2.toString());
+                    context.write(wordsOutput, one);
                 }
 
                 if (count >= 3) {
@@ -64,8 +63,8 @@ public class Step1WordCount {
                     w1.set(words[(count - 3) % 3]);
                     w2.set(words[(count - 2) % 3]);
                     w3.set(words[(count - 1) % 3]);
-                    output.set(w1.toString() + " " + w2.toString() + " " + w3.toString());
-                    context.write(output, one);
+                    wordsOutput.set(w1.toString() + " " + w2.toString() + " " + w3.toString());
+                    context.write(wordsOutput, one);
                 }
             } //end of while
         }

@@ -21,23 +21,24 @@ import java.io.IOException;
  * @Output: ( (w1, w2, w3) , Text(N1<LongWritable>,N2<LongWritable>,N3<LongWritable>, C0<0> ,C1<0> ,C2<0>)
  */
 public class Step3CalculateC {
+
     //public class Mapper<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
     //public class Mapper<lineId,line,words,quantity>
     //Example of a line form step 1 output: "w1 w1 w3	1"
-//    public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
-//
-//        // reverse the order of the words to get the proper order at sorting
-//        @Override
-//        public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
-//
-//            String[] keyAndValue = line.toString().split("\t");
-//            String words = keyAndValue[0];
-//            LongWritable quantity = new LongWritable(Long.parseLong(keyAndValue[1]));
-//
-//            Text reversedWordsText = UtilsFunctions.reverseTextWithSpaces(new Text(words));
-//            context.write(reversedWordsText, quantity);
-//        }
-//    }
+    public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
+
+        // reverse the order of the words to get the proper order at sorting
+        @Override
+        public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
+
+            String[] keyAndValue = line.toString().split("\t");
+            String words = keyAndValue[0];
+            LongWritable quantity = new LongWritable(Long.parseLong(keyAndValue[1]));
+
+            Text reversedWordsText = UtilsFunctions.reverseTextWithSpaces(new Text(words));
+            context.write(reversedWordsText, quantity);
+        }
+    }
 
     //Partition by the first word
     public static class PartitionerClass extends Partitioner<Text, LongWritable> {
@@ -116,7 +117,7 @@ public class Step3CalculateC {
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "Step 2: Calculate N");
         job.setJarByClass(Step2CalculateN.class);
-        job.setMapperClass(Step2CalculateN.MapperClass.class);
+        job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
         // job.setCombinerClass(Step1WordCount.ReducerClass.class); //Don't think it will do a differnt
         job.setReducerClass(ReducerClass.class);
