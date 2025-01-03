@@ -1,5 +1,6 @@
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -23,116 +24,72 @@ import java.io.IOException;
 public class Step4CalculateP {
 
     //public class Mapper<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
-    //public class Mapper<lineId,line,words,quantity>
-    //Example of a line form step 1 output: "w1 w2 w3	1" as the record reader import it.
-    public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
-        private final Text emptyText = new Text(); //Note: just the pointer is final, the value itself is chainable.
+    //public class Mapper<lineId,line>
+    //Example of a line form step 3 output: (w1 w2 w3 , N1 N2 N3 C0 C1 C2)
+    public static class MapperClass extends Mapper<LongWritable, Text, Text, Text> {
         /**
-         * Parse the RR output
-         * Reverse the order of the words to get the proper order at sorting
-         * If the word is a single word, emit (Text emptyText, LongWritable one)
+         * Parse the RR output and emit
          * @param (lineId, line)
          */
         @Override
         public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
             //Parse the RR output
             String[] keyAndValue = line.toString().split("\t");
-            Text wordsText = new Text(keyAndValue[0]);
-            String[] wordsArr = keyAndValue[0].split(" ");
-            LongWritable quantity = new LongWritable(Long.parseLong(keyAndValue[1]));
-
-            if (wordsText.equals(emptyText)){
-                context.write(wordsText, quantity);
-
-                //emit the word and an empty text in order to calculate C0
-            } else if (wordsArr.length == 1) {
-                context.write(wordsText, quantity);
-
-                // switch the order of the first two words and emit
-            } else if (wordsArr.length == 2) {
-                Text reversedWordsText = UtilsFunctions.reverseTextWithSpaces(wordsText);
-                context.write(reversedWordsText,quantity);
-
-                // switch the order of the first two words and emit
-            } else if (wordsArr.length == 3) {
-                Text firstTwoWords = new Text (wordsArr[0] + " " + wordsArr[1]);
-                String reversedFirstTwoWords  = UtilsFunctions.reverseTextWithSpaces(firstTwoWords).toString();
-                Text outputTextKey = new Text ( reversedFirstTwoWords + " " + wordsArr[2]);
-                context.write(outputTextKey, quantity);
-            }
-
+            context.write(new Text(keyAndValue[0]) , new Text(keyAndValue[1]));
         } //end of  map()
     } //end of MapperClass
 
-    //Partition by the first word
-    public static class PartitionerClass extends Partitioner<Text, LongWritable> {
+    //Default Partition
+    public static class PartitionerClass extends Partitioner<Text, Text> {
         @Override
-        public int getPartition(Text words, LongWritable value, int numPartitions) {
-            String[] wordsArr = words.toString().split(" ");
-            return wordsArr[0].hashCode() % numPartitions;
+        public int getPartition(Text key, Text value, int numPartitions) {
+            return key.hashCode() % numPartitions;
         }
+    }
+    public static class Combiner extends Reducer<Text, Text, Text, FloatWritable> {
+        // TODO:
     }
 
 
-    //Class Reducer<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
-    //Input Example:
-    public static class ReducerClass extends Reducer<Text, LongWritable, Text, Text> {
-        // We will mark 3-gram input as (w1, w2, w3)
-        private long C0 = 0;  // The total number of word instances in the corpus.
-        private long C1 = 0;  // The number of times w2 occurs.
-        private long C2 = 0;  // The number of times sequence (w1,w2) occurs.
-
-        private final Text lastSingedWord = new Text(""); //just the pointer is final
-        private final Text lastPairWord = new Text("");
-
-        private final String placeHolderForN = "0 0 0"; //placeholder for the values of C0,C1,C2 that will be calculated in step3
-        private final Text emptyText = new Text(); //Note: just the pointer is final, the value itself is chainable.
+        //Class Reducer<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
+    public static class ReducerClass extends Reducer<Text, Text, Text, FloatWritable> {
 
 
-        // The method accumulates the counts of C0, C1, C2
-        // If the key represents a 3-word n-gram, it emits C0, C1, C2 under the 3-gram key.
+        /**
+         * Accumulates the counts of N1 N2 N3 C0 C1 C2
+         * Calculate the probability P and emit
+         *
+         * @Input (Text(w1 w2 w3), Text(N1 N2 N3 C0 C1 C2)
+         * @Output (Text(w1 w2 w3), FloatWritable P)
+         */
         @Override
-        public void reduce(Text words, Iterable<LongWritable> quantities, Context context) throws IOException, InterruptedException {
+        public void reduce(Text words, Iterable<Text> valuesNC, Context context) throws IOException, InterruptedException {
+            double N1 = 0;  // Number of times w3 occurs
+            double N2 = 0;  // Number of times the sequence (w2, w3) occurs
+            double N3 = 0;  // Number of times the sequence (w1, w2, w3) occurs
+            double C0 = 0;  // The total number of word instances in the corpus
+            double C1 = 0;  // The number of times w2 occurs
+            double C2 = 0;  // The number of times the sequence (w1, w2) occurs
 
-            // Calculate C0
-            if (words.equals(emptyText)) {
-                for (LongWritable quantity : quantities) {
-                    C0 += quantity.get();
-                }
-                return;
+            // Accumulate the counts from the values
+            for (Text valueNC : valuesNC) {
+                String[] counts = valueNC.toString().split(" ");
+                N1 += Double.parseDouble(counts[0]);
+                N2 += Double.parseDouble(counts[1]);
+                N3 += Double.parseDouble(counts[2]);
+                C0 += Double.parseDouble(counts[3]);
+                C1 += Double.parseDouble(counts[4]);
+                C2 += Double.parseDouble(counts[5]);
             }
 
-            String[] wordsArr = words.toString().split(" ");
+            //calculate the probability
+            double k2 = (Math.log(N2 + 1) + 1) / (Math.log(N2 + 1) + 2);
+            double k3 = (Math.log(N3 + 1) + 1) / (Math.log(N3 + 1) + 2);
 
-            //the input is one word
-            if (wordsArr.length == 1) {
+            double p = k3 * N3/C2 + (1 - k3) * k2 * N2/C1 + (1 - k3) * (1 - k2) * N1/C0;
 
-                if (!lastSingedWord.equals(words)) {
-                    lastSingedWord.set(words);
-                    C1 = 0;
-                }
-                for (LongWritable quantity : quantities) {
-                    C1 += quantity.get();
-                }
-
-                //the input is two words
-            } else if (wordsArr.length == 2) {
-
-                if (!lastPairWord.equals(words)) {
-                    lastPairWord.set(words);
-                    C2 = 0;
-                }
-                for (LongWritable quantity : quantities) {
-                    C2 += quantity.get();
-                }
-
-                //emit under the original 3-words key
-            } else if (wordsArr.length == 3) {
-                Text firstTwoWords = new Text (wordsArr[0] + " " + wordsArr[1]);
-                String originalFirstTwoWords  = UtilsFunctions.reverseTextWithSpaces(firstTwoWords).toString();
-                Text originalWords = new Text ( originalFirstTwoWords + " " + wordsArr[2]);
-                context.write(originalWords, new Text(placeHolderForN + " " + C0 + " " + C1 + " " + C2));
-            } //end of if 3
+            // Emit the result
+            context.write(words, new FloatWritable((float) p));
 
         } //end of reduce()
     } //end of reducer class
@@ -142,26 +99,25 @@ public class Step4CalculateP {
         System.out.println("[DEBUG] STEP 3 started!");
         System.out.println(args.length > 0 ? args[0] : "no args");
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "Step 3: Calculate C");
-        job.setJarByClass(Step3CalculateC.class);
+        Job job = Job.getInstance(conf, "Step 4: Calculate C");
+        job.setJarByClass(Step4CalculateP.class);
         job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
         // job.setCombinerClass(Step1WordCount.ReducerClass.class); //Don't think it will do a different
         job.setReducerClass(ReducerClass.class);
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(LongWritable.class);
+        job.setMapOutputValueClass(Text.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(Text.class);
+        job.setOutputValueClass(FloatWritable.class);
 
         // For n_grams S3 files.
         // Note: This is English version and you should change the path to the relevant one
         // job.setOutputFormatClass(TextOutputFormat.class);
         // job.setInputFormatClass(SequenceFileInputFormat.class);
-        // TextInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/3gram/data"));
 
-        FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step1_word_count", App.s3Path)));
-        FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step1_word_count", App.s3Path)));
-        FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step3_cal_C", App.s3Path)));
+        FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step2_cal_N", App.s3Path)));
+        FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step3_cal_C", App.s3Path)));
+        FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step4_cal_P", App.s3Path)));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
 
     } // end of main
