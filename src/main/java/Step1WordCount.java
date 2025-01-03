@@ -23,10 +23,11 @@ public class Step1WordCount {
     //public class Mapper<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
     public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
         private final static LongWritable one = new LongWritable(1);
-        private Text w1 = new Text();
-        private Text w2 = new Text();
-        private Text w3 = new Text();
-        private Text wordsOutput = new Text(); // Reuse output Text object
+        private final Text w1 = new Text(); //Warning: just the pointer is final
+        private final Text w2 = new Text();
+        private final Text w3 = new Text();
+        private final Text wordsOutput = new Text(); // Reuse output Text object
+        private final Text emptyText = new Text();
 
 
         @Override
@@ -48,6 +49,7 @@ public class Step1WordCount {
                     w1.set(words[(count - 1) % 3]);
                     wordsOutput.set(w1);
                     context.write(wordsOutput, one);
+                    context.write(emptyText, one);
                 }
 
                 if (count >= 2) {

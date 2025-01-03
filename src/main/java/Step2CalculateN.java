@@ -25,16 +25,18 @@ public class Step2CalculateN {
     //public class Mapper<lineId,line,words,quantity>
     //Example of a line form step 1 output: "w1 w1 w3	1"
     public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
+        private final Text emptyText = new Text();
 
         // reverse the order of the words to get the proper order at sorting
         @Override
         public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
 
             String[] keyAndValue = line.toString().split("\t");
-            String words = keyAndValue[0];
+            Text words = new Text(keyAndValue[0]);
+            if (words.equals(emptyText)) return; //handled in step 3.
             LongWritable quantity = new LongWritable(Long.parseLong(keyAndValue[1]));
 
-            Text reversedWordsText = UtilsFunctions.reverseTextWithSpaces(new Text(words));
+            Text reversedWordsText = UtilsFunctions.reverseTextWithSpaces(words);
             context.write(reversedWordsText, quantity);
         }
     }
@@ -57,9 +59,9 @@ public class Step2CalculateN {
         private long N2 = 0;  // Number of times the sequence (w2, w3) occurs
         private long N3 = 0;  // Number of times the sequence (w1, w2, w3) occurs
 
-        private Text lastSingelWord = new Text("");
-        private Text lastPairWord = new Text("");
-        private Text lastTripleWord = new Text("");
+        private final Text lastSingedWord = new Text(""); //just the pointer is final
+        private final Text lastPairWord = new Text("");
+        private final Text lastTripleWord = new Text("");
 
         private final String placeHolderForC = " 0 0 0"; //placeholder for the values of C0,C1,C2 that will be calculated in step3
 
@@ -73,8 +75,8 @@ public class Step2CalculateN {
             //the input is one word
             if (wordsArr.length == 1) {
 
-                if (!lastSingelWord.equals(words)) {
-                    lastSingelWord.set(words);
+                if (!lastSingedWord.equals(words)) {
+                    lastSingedWord.set(words);
                     N1 = 0;
                 }
                 for (LongWritable quantity : quantities) {
