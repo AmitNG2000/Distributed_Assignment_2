@@ -13,14 +13,14 @@ import java.io.IOException;
 
 
 /**
- * Calculate C0 C1 C2
+ * Calculate the probability P
  *
- * @pre there is file: <S3BucketName>/outputs/output_step1_word_count
- * @Input step1's output
- * @Input ( (w1) or (w1 w2) or (w1 w2 w3), <LongWritable>))
- * @Output: ((w1, w2, w3) , Text(N1<LongWritable>,N2<LongWritable>,N3<LongWritable>, C0<0> ,C1<0> ,C2<0>)
+ * @pre there is files: <S3BucketName>/outputs/output_step2_cal_N, <S3BucketName>/outputs/output_step3_cal_C
+ * @Input step2's and Step3's output
+ * @Input (Text(w1 w2 w3), Text(N1 N2 N3 C0 C1 C2)
+ * @Output: (Text(w1, w2, w3) , FloatWritable P)
  */
-public class Step3CalculateC {
+public class Step4CalculateP {
 
     //public class Mapper<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
     //public class Mapper<lineId,line,words,quantity>
@@ -153,7 +153,13 @@ public class Step3CalculateC {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
 
+        // For n_grams S3 files.
+        // Note: This is English version and you should change the path to the relevant one
+        // job.setOutputFormatClass(TextOutputFormat.class);
+        // job.setInputFormatClass(SequenceFileInputFormat.class);
+        // TextInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/3gram/data"));
 
+        FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step1_word_count", App.s3Path)));
         FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step1_word_count", App.s3Path)));
         FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step3_cal_C", App.s3Path)));
         System.exit(job.waitForCompletion(true) ? 0 : 1);

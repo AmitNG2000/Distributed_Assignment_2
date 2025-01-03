@@ -127,11 +127,6 @@ public class Step2CalculateN {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
 
-        // For n_grams S3 files.
-        // Note: This is English version and you should change the path to the relevant one
-        // job.setOutputFormatClass(TextOutputFormat.class);
-        // job.setInputFormatClass(SequenceFileInputFormat.class);
-        // TextInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/3gram/data"));
 
         FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step1_word_count", App.s3Path)));
         FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step2_cal_N", App.s3Path)));
