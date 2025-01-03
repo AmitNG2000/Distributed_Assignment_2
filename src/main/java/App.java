@@ -25,7 +25,7 @@ public class App {
      * Executes the job flow.
      * @pre AWS credentials are configured
      * @pre an S3 bucket exists with the specified name at <bucketName>
-     * @pre the steps' JAR files are located in <bucketName>/jars with names: step1, Step2 ...
+     * @pre the steps' JAR files are located in <bucketName>/jars with names: Step1, Step2 ...
      * @pre For Demo: arbix file is in the <bucketName>.
      */
     public static void main(String[]args){

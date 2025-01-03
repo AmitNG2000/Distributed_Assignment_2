@@ -96,7 +96,7 @@ public class Step4CalculateP {
 
 
     public static void main(String[] args) throws Exception {
-        System.out.println("[DEBUG] STEP 3 started!");
+        System.out.println("[DEBUG] STEP 4 started!");
         System.out.println(args.length > 0 ? args[0] : "no args");
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "Step 4: Calculate C");
