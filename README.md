@@ -8,11 +8,13 @@
 ## Backround
 This project is part of BGU University's Distributed System Programming course, Assignment 2.
 The project is map-reduce algorithm.
-Implementation by Amazon Web Services (AWS) and Hadoop framework.
+Implementation by Amazon Web Services (AWS) and Hadoop framework. </br>
+[Instructions Assignment 2](resources/Assignment2.pdf)
 
 ## Overview
 In this assignment you will generate a knowledge-base for Hebrew word-prediction system, based on
-Google 3-Gram Hebrew dataset, using Amazon Elastic Map-Reduce (EMR). 
+Google 3-Gram Hebrew dataset, using Amazon Elastic Map-Reduce (EMR). </br>
+[Outputs Examples](resources/OutputsExamples)
 
 ## How to run
 1. Configure AWS credentials in your machine.
@@ -37,7 +39,7 @@ Note: make sure that the S3 bucket doest inculcated `output` or `log` folder pre
 
 ## Logic Diagram
 [Diagram PDF](resources/A2_Logic_Diagram.pdf) <br/>
-[Diagram](https://drive.google.com/file/d/1VjUymYuY0KmfWGZVFDFdpoWrRNe8jw-8/view?usp=sharing) open with *draw.io*. 
+[draw.io Diagram](https://drive.google.com/file/d/1VjUymYuY0KmfWGZVFDFdpoWrRNe8jw-8/view?usp=sharing) </br>
 
 
 
