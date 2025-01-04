@@ -126,7 +126,7 @@ public class Step4CalculateP {
         System.out.println("[DEBUG] STEP 4 started!");
         System.out.println(args.length > 0 ? args[0] : "no args");
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "Step 4: Calculate C");
+        Job job = Job.getInstance(conf, "Step 4: Calculate P");
         job.setJarByClass(Step4CalculateP.class);
         job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);

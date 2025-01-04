@@ -35,7 +35,12 @@ public class Step5ArrangeResults {
         public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
             //Parse the RR output
             String[] keyAndValue = line.toString().split("\t");
-            context.write(new Text(keyAndValue[0]) , new Text(keyAndValue[1]));
+            String[] words = keyAndValue[0].split(" ");
+            float p = Float.parseFloat(keyAndValue[1]);
+
+            Text newKey = new Text(words[0] + " " +  words[1] + " " + (1-p));
+
+            context.write(newKey , new Text(words[2]));
         } //end of  map()
     } //end of MapperClass
 
@@ -46,88 +51,39 @@ public class Step5ArrangeResults {
             return key.hashCode() % numPartitions;
         }
     }
-    public static class Combiner extends Reducer<Text, Text, Text, Text> {
-
-        /**
-         * Accumulates the counts of N1 N2 N3 C0 C1 C2
-         * Calculate the probability P and emit
-         *
-         * @Input (Text ( w1 w2 w3), Text(N1 N2 N3 C0 C1 C2)
-         * @Output (Text ( w1 w2 w3), FloatWritable P)
-         */
-        @Override
-        public void reduce(Text words, Iterable<Text> valuesNC, Context context) throws IOException, InterruptedException {
-            double N1 = 0;  // Number of times w3 occurs
-            double N2 = 0;  // Number of times the sequence (w2, w3) occurs
-            double N3 = 0;  // Number of times the sequence (w1, w2, w3) occurs
-            double C0 = 0;  // The total number of word instances in the corpus
-            double C1 = 0;  // The number of times w2 occurs
-            double C2 = 0;  // The number of times the sequence (w1, w2) occurs
-
-            // Accumulate the counts from the values
-            for (Text valueNC : valuesNC) {
-                String[] counts = valueNC.toString().split(" ");
-                N1 += Double.parseDouble(counts[0]);
-                N2 += Double.parseDouble(counts[1]);
-                N3 += Double.parseDouble(counts[2]);
-                C0 += Double.parseDouble(counts[3]);
-                C1 += Double.parseDouble(counts[4]);
-                C2 += Double.parseDouble(counts[5]);
-            }
-            context.write(words, new Text(N1 + " " + N2 + " " + N3 + " " + C0 + " " + C1 + " " + C2));
-        }
-    } //end of combiner
 
 
     //Class Reducer<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
     public static class ReducerClass extends Reducer<Text, Text, Text, FloatWritable> {
 
         /**
-         * Accumulates the counts of N1 N2 N3 C0 C1 C2
-         * Calculate the probability P and emit
+         * Reverse the change made in the mapper. Making the wanted look.
          *
-         * @Input (Text(w1 w2 w3), Text(N1 N2 N3 C0 C1 C2)
-         * @Output (Text(w1 w2 w3), FloatWritable P)
+         * @Input (Text (w1 w2 {1-P}), Text(w3))
+         * @Output (Text(w1 w2 w3), Text P)
          */
         @Override
-        public void reduce(Text words, Iterable<Text> valuesNC, Context context) throws IOException, InterruptedException {
-            double N1 = 0;  // Number of times w3 occurs
-            double N2 = 0;  // Number of times the sequence (w2, w3) occurs
-            double N3 = 0;  // Number of times the sequence (w1, w2, w3) occurs
-            double C0 = 0;  // The total number of word instances in the corpus
-            double C1 = 0;  // The number of times w2 occurs
-            double C2 = 0;  // The number of times the sequence (w1, w2) occurs
+        public void reduce(Text key, Iterable<Text> words3, Context context) throws IOException, InterruptedException {
+            for (Text w3 : words3) {
+                //float p = Float.parseFloat(probability.toString());
 
-            // Accumulate the counts from the values
-            for (Text valueNC : valuesNC) {
-                String[] counts = valueNC.toString().split(" ");
-                N1 += Double.parseDouble(counts[0]);
-                N2 += Double.parseDouble(counts[1]);
-                N3 += Double.parseDouble(counts[2]);
-                C0 += Double.parseDouble(counts[3]);
-                C1 += Double.parseDouble(counts[4]);
-                C2 += Double.parseDouble(counts[5]);
+                String[] keyArr = key.toString().split(" ");
+                Text originalKey = new Text(keyArr[0] + " " + keyArr[1] + " " + w3.toString());
+                FloatWritable probability = new FloatWritable(1 - Float.parseFloat(keyArr[2]));
+
+                context.write(originalKey, probability);
             }
-
-            //calculate the probability
-            double k2 = (Math.log(N2 + 1) + 1) / (Math.log(N2 + 1) + 2);
-            double k3 = (Math.log(N3 + 1) + 1) / (Math.log(N3 + 1) + 2);
-
-            double p = k3 * N3/C2 + (1 - k3) * k2 * N2/C1 + (1 - k3) * (1 - k2) * N1/C0;
-
-            // Emit the result
-            context.write(words, new FloatWritable((float) p));
 
         } //end of reduce()
     } //end of reducer class
 
 
     public static void main(String[] args) throws Exception {
-        System.out.println("[DEBUG] STEP 4 started!");
+        System.out.println("[DEBUG] STEP 5 started!");
         System.out.println(args.length > 0 ? args[0] : "no args");
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "Step 4: Calculate C");
-        job.setJarByClass(Step4CalculateP.class);
+        Job job = Job.getInstance(conf, "Step 5: Arrange Results");
+        job.setJarByClass(Step5ArrangeResults.class);
         job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
         // job.setCombinerClass(Step1WordCount.ReducerClass.class); //Don't think it will do a different
@@ -137,16 +93,11 @@ public class Step5ArrangeResults {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(FloatWritable.class);
 
-        // For n_grams S3 files.
-        // Note: This is English version and you should change the path to the relevant one
-        // job.setOutputFormatClass(TextOutputFormat.class);
-        // job.setInputFormatClass(SequenceFileInputFormat.class);
-
-        FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step2_cal_N", App.s3Path)));
-        FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step3_cal_C", App.s3Path)));
-        FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step4_cal_P", App.s3Path)));
+        FileInputFormat.addInputPath(job, new Path(String.format("%s/outputs/output_step4_cal_P", App.s3Path)));
+        FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step5_final_results", App.s3Path)));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
 
     } // end of main
 }
+
 

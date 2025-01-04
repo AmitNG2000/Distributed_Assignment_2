@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="1">
-    <output-path>$PROJECT_DIR$/out/artifacts/1</output-path>
+  <artifact type="jar" name="5">
+    <output-path>$PROJECT_DIR$/out/artifacts/5</output-path>
     <root id="archive" name="LocalApp.jar">
       <element id="directory" name="META-INF">
         <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
