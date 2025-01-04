@@ -49,7 +49,7 @@ public class App {
         // Step 1
         HadoopJarStepConfig step1 = new HadoopJarStepConfig()
                 .withJar(String.format("%s/jars/Step1.jar" , s3Path))
-                .withMainClass("Step1");
+                .withMainClass("Step1WordCount");
 
         StepConfig stepConfig1 = new StepConfig()
                 .withName("Step1")
@@ -60,7 +60,7 @@ public class App {
         // Step 2
         HadoopJarStepConfig step2 = new HadoopJarStepConfig()
                 .withJar(String.format("%s/jars/Step2.jar" , s3Path))
-                .withMainClass("Step2");
+                .withMainClass("Step2CalculateN");
 
         StepConfig stepConfig2 = new StepConfig()
                 .withName("Step2")
@@ -70,7 +70,7 @@ public class App {
         // Step 3
         HadoopJarStepConfig step3 = new HadoopJarStepConfig()
                 .withJar(String.format("%s/jars/Step3.jar" , s3Path))
-                .withMainClass("Step3");
+                .withMainClass("Step3CalculateC");
 
         StepConfig stepConfig3 = new StepConfig()
                 .withName("Step3")
@@ -80,7 +80,7 @@ public class App {
         // Step 4
         HadoopJarStepConfig step4 = new HadoopJarStepConfig()
                 .withJar(String.format("%s/jars/Step4.jar" , s3Path))
-                .withMainClass("Step4");
+                .withMainClass("Step4CalculateP");
 
         StepConfig stepConfig4 = new StepConfig()
                 .withName("Step4")

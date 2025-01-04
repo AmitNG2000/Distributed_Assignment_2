@@ -46,14 +46,41 @@ public class Step4CalculateP {
             return key.hashCode() % numPartitions;
         }
     }
-    public static class Combiner extends Reducer<Text, Text, Text, FloatWritable> {
-        // TODO:
-    }
+    public static class Combiner extends Reducer<Text, Text, Text, Text> {
+
+        /**
+         * Accumulates the counts of N1 N2 N3 C0 C1 C2
+         * Calculate the probability P and emit
+         *
+         * @Input (Text ( w1 w2 w3), Text(N1 N2 N3 C0 C1 C2)
+         * @Output (Text ( w1 w2 w3), FloatWritable P)
+         */
+        @Override
+        public void reduce(Text words, Iterable<Text> valuesNC, Context context) throws IOException, InterruptedException {
+            double N1 = 0;  // Number of times w3 occurs
+            double N2 = 0;  // Number of times the sequence (w2, w3) occurs
+            double N3 = 0;  // Number of times the sequence (w1, w2, w3) occurs
+            double C0 = 0;  // The total number of word instances in the corpus
+            double C1 = 0;  // The number of times w2 occurs
+            double C2 = 0;  // The number of times the sequence (w1, w2) occurs
+
+            // Accumulate the counts from the values
+            for (Text valueNC : valuesNC) {
+                String[] counts = valueNC.toString().split(" ");
+                N1 += Double.parseDouble(counts[0]);
+                N2 += Double.parseDouble(counts[1]);
+                N3 += Double.parseDouble(counts[2]);
+                C0 += Double.parseDouble(counts[3]);
+                C1 += Double.parseDouble(counts[4]);
+                C2 += Double.parseDouble(counts[5]);
+            }
+            context.write(words, new Text(N1 + " " + N2 + " " + N3 + " " + C0 + " " + C1 + " " + C2));
+        }
+    } //end of combiner
 
 
         //Class Reducer<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
     public static class ReducerClass extends Reducer<Text, Text, Text, FloatWritable> {
-
 
         /**
          * Accumulates the counts of N1 N2 N3 C0 C1 C2

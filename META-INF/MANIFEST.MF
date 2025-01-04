@@ -1,3 +1,3 @@
 Manifest-Version: 1.0
-Main-Class: step1
+Main-Class: Step4CalculateP
 
