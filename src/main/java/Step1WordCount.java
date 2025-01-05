@@ -7,7 +7,10 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 import java.util.StringTokenizer;
@@ -29,23 +32,44 @@ public class Step1WordCount {
         private final Text wordsOutput = new Text(); // Reuse output Text object
         private final Text emptyText = new Text();
 
-
         @Override
-        public void map(LongWritable key, Text sentence, Context context) throws IOException,  InterruptedException {
+        public void map(LongWritable key, Text sentence, Context context) throws IOException, InterruptedException {
             // Tokenize the input sentence
             StringTokenizer tokenizer = new StringTokenizer(sentence.toString());
 
-            // Store the words for constructing n-grams
+            // Track words for constructing n-grams
             String[] words = new String[3];
             int count = 0;
 
             while (tokenizer.hasMoreTokens()) {
+                // Get the next token (word)
+                String token = tokenizer.nextToken().trim();
+
+                // Filter out unwanted characters or garbage:
+                // 1. Skip empty or null tokens
+                if (token == null || token.isEmpty()) {
+                    continue;
+                }
+
+                // 2. Skip tokens with non-Hebrew or invalid characters
+                if (!isValidToken(token)) {
+                    continue;
+                }
+
+                // 3. Check if the word is a stop word
+                if (App.stopWords.contains(token)) {
+                    continue; // Skip this word if it's a stop word
+                }
+
+                // Print the cleaned token for debugging
+                System.out.println("Processed Token: " + token);
+
                 // Shift words to construct n-grams
-                words[count % 3] = tokenizer.nextToken();
+                words[count % 3] = token;
                 count++;
 
                 if (count >= 1) {
-                    // Emit uni-gram (w1)
+                    // Emit unigram (w1)
                     w1.set(words[(count - 1) % 3]);
                     wordsOutput.set(w1);
                     context.write(wordsOutput, one);
@@ -53,7 +77,7 @@ public class Step1WordCount {
                 }
 
                 if (count >= 2) {
-                    // Emit bi-gram (w1, w2)
+                    // Emit bigram (w1, w2)
                     w1.set(words[(count - 2) % 3]);
                     w2.set(words[(count - 1) % 3]);
                     wordsOutput.set(w1.toString() + " " + w2.toString());
@@ -61,14 +85,20 @@ public class Step1WordCount {
                 }
 
                 if (count >= 3) {
-                    // Emit tri-gram (w1, w2, w3)
+                    // Emit trigram (w1, w2, w3)
                     w1.set(words[(count - 3) % 3]);
                     w2.set(words[(count - 2) % 3]);
                     w3.set(words[(count - 1) % 3]);
                     wordsOutput.set(w1.toString() + " " + w2.toString() + " " + w3.toString());
                     context.write(wordsOutput, one);
                 }
-            } //end of while
+            }
+        }
+
+        // Helper method to validate tokens
+        private boolean isValidToken(String token) {
+            // Check if the token contains only valid characters (e.g., Hebrew letters and spaces)
+            return token.matches("[א-ת.:]+");
         }
     }
 
@@ -105,17 +135,14 @@ public class Step1WordCount {
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(LongWritable.class);
-
 //        For n_grams S3 files.
 //        Note: This is English version and you should change the path to the relevant one
-//        job.setOutputFormatClass(TextOutputFormat.class);
-//        job.setInputFormatClass(SequenceFileInputFormat.class);
-//        TextInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/3gram/data"));
-
-        FileInputFormat.addInputPath(job, new Path(String.format("%s/arbix.txt" , App.s3Path)));
+        job.setOutputFormatClass(TextOutputFormat.class);
+        job.setInputFormatClass(TextInputFormat.class);
+//For demo testing
+        //FileInputFormat.addInputPath(job, new Path(String.format("%s/arbix.txt" , App.s3Path)));
+        FileInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/heb-all/3gram/data"));
         FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step1_word_count" , App.s3Path)));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
-
-
 }
