@@ -98,7 +98,7 @@ public class Step1WordCount {
         // Helper method to validate tokens
         private boolean isValidToken(String token) {
             // Check if the token contains only valid characters (e.g., Hebrew letters and spaces)
-            return token.matches("[א-ת.:]+");
+            return token.matches("[א-ת]+");
         }
     }
 
@@ -135,12 +135,12 @@ public class Step1WordCount {
         job.setMapOutputValueClass(LongWritable.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(LongWritable.class);
-//        For n_grams S3 files.
-//        Note: This is English version and you should change the path to the relevant one
+
         job.setOutputFormatClass(TextOutputFormat.class);
         job.setInputFormatClass(TextInputFormat.class);
-//For demo testing
+        //For demo testing
         //FileInputFormat.addInputPath(job, new Path(String.format("%s/arbix.txt" , App.s3Path)));
+        //3-Gram input
         FileInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/heb-all/3gram/data"));
         FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step1_word_count" , App.s3Path)));
         System.exit(job.waitForCompletion(true) ? 0 : 1);
