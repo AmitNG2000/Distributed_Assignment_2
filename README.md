@@ -49,5 +49,10 @@ Note: make sure that the S3 bucket doesn't include `output` or `log` folder pre-
 [Diagram PDF](resources/A2_Logic_Diagram.pdf) <br/>
 [draw.io Diagram](https://drive.google.com/file/d/1VjUymYuY0KmfWGZVFDFdpoWrRNe8jw-8/view?usp=sharing) </br>
 
+## Requested report
+[Step 5 final output](resources/Report.pdf) <br/>
+
+## Final step5 output file
+[Step 5 final output](resources/output-step5) <br/>
 
 

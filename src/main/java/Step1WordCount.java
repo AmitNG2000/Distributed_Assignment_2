@@ -137,7 +137,7 @@ public class Step1WordCount {
         job.setOutputValueClass(LongWritable.class);
 
         job.setOutputFormatClass(TextOutputFormat.class);
-        job.setInputFormatClass(TextInputFormat.class);
+        job.setInputFormatClass(SequenceFileInputFormat.class);
         //For demo testing
         //FileInputFormat.addInputPath(job, new Path(String.format("%s/arbix.txt" , App.s3Path)));
         //3-Gram input
