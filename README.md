@@ -9,7 +9,7 @@
 ## Backround
 This project is part of BGU University's Distributed System Programming course, Assignment 2. </br>
 The project is map-reduce algorithm. </br>
-Implementation by Amazon Web Services (AWS) and Hadoop framework. </br>
+Implementation with Java, Amazon Web Services (AWS) and Hadoop framework. </br>
 [Instructions Assignment 2](resources/Assignment2.pdf)
 
 ## Overview
