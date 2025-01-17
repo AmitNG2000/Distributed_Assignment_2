@@ -139,7 +139,7 @@ public class Step1WordCount {
         job.setOutputFormatClass(TextOutputFormat.class);
         job.setInputFormatClass(SequenceFileInputFormat.class);
         //For demo testing
-        //FileInputFormat.addInputPath(job, new Path(String.format("%s/arbix.txt" , App.s3Path)));
+        //FileInputFormat.addInputPath(job, new Path(String.format("%s/InputExample.txt" , App.s3Path)));
         //3-Gram input
         FileInputFormat.addInputPath(job, new Path("s3://datasets.elasticmapreduce/ngrams/books/20090715/heb-all/3gram/data"));
         FileOutputFormat.setOutputPath(job, new Path(String.format("%s/outputs/output_step1_word_count" , App.s3Path)));
