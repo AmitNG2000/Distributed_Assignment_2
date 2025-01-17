@@ -5,12 +5,6 @@
 <br/>
 
 # README
-## Information
-Names:
-עמית נר גאון - 211649801
-<br/>
-נווה וזדיאס הדס - 209169424
-
 
 ## Backround
 This project is part of BGU University's Distributed System Programming course, Assignment 2. </br>
